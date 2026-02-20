@@ -3,26 +3,43 @@ set -euo pipefail
 
 echo "Nextcloud Install (Debian 13 + stable)"
 
-# Interaktiv nur wenn Terminal vorhanden
+# ───────────────────────────────────────────────
+# Passwort-Eingabe – immer interaktiv wenn TTY
+# ───────────────────────────────────────────────
 if [ -t 0 ]; then
-  read -r -p "MariaDB root Passwort: " MYSQL_ROOT_PASS
-  read -r -p "Nextcloud DB User: "     MYSQL_USER
-  read -r -s -p "Nextcloud DB Passwort: " MYSQL_USER_PASS
+  echo
+  read -r -p "MariaDB root Passwort (leer = zufällig): " MYSQL_ROOT_PASS
+  read -r -p "Nextcloud DB User (Enter = nextcloud): " MYSQL_USER
+  read -r -s -p "Nextcloud DB Passwort (leer = zufällig): " MYSQL_USER_PASS
+  echo
+
+  # Defaults setzen
+  MYSQL_USER=${MYSQL_USER:-nextcloud}
+  [ -z "$MYSQL_ROOT_PASS" ] && MYSQL_ROOT_PASS=$(openssl rand -base64 18)
+  [ -z "$MYSQL_USER_PASS" ] && MYSQL_USER_PASS=$(openssl rand -base64 15)
+
+  echo "Verwendete Werte:"
+  echo "  DB Root Pass:  ${MYSQL_ROOT_PASS:0:4}... (versteckt)"
+  echo "  DB User:       $MYSQL_USER"
+  echo "  DB User Pass:  ${MYSQL_USER_PASS:0:4}... (versteckt)"
   echo
 else
-  MYSQL_ROOT_PASS="${MYSQL_ROOT_PASS:-$(openssl rand -base64 18)}"
-  MYSQL_USER="${MYSQL_USER:-nextcloud}"
-  MYSQL_USER_PASS="${MYSQL_USER_PASS:-$(openssl rand -base64 15)}"
-  echo "Kein TTY → Defaults / Zufallspasswörter werden verwendet"
-  echo "DB User: $MYSQL_USER"
-  echo "DB Pass: $MYSQL_USER_PASS  (ändern Sie es danach!)"
+  # Non-interactive → immer Zufall
+  MYSQL_ROOT_PASS=$(openssl rand -base64 18)
+  MYSQL_USER=nextcloud
+  MYSQL_USER_PASS=$(openssl rand -base64 15)
+  echo "Kein TTY → Zufallspasswörter werden verwendet"
 fi
 
 [ -z "$MYSQL_ROOT_PASS" ] && { echo "Root-Passwort fehlt"; exit 1; }
 [ -z "$MYSQL_USER_PASS" ] && { echo "User-Passwort fehlt"; exit 1; }
 
+# ───────────────────────────────────────────────
+# Rest unverändert
+# ───────────────────────────────────────────────
+
 apt update && apt upgrade -y
-apt install -y curl nano ca-certificates gnupg lsb-release
+apt install -y curl nano ca-certificates gnupg lsb-release openssl
 
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
@@ -58,7 +75,6 @@ services:
       MYSQL_USER: $MYSQL_USER
     volumes:
       - db:/var/lib/mysql
-
   app:
     image: nextcloud:stable
     container_name: nextcloud-app
@@ -74,7 +90,6 @@ services:
       MYSQL_DATABASE: nextcloud
       MYSQL_USER: $MYSQL_USER
       MYSQL_HOST: db
-
 volumes:
   db:
   nextcloud:
@@ -82,6 +97,7 @@ EOF
 
 docker compose up -d
 
+# Update-Skript
 cat <<'EOF' > update-nextcloud.sh
 #!/usr/bin/env bash
 set -euo pipefail
@@ -93,8 +109,17 @@ docker exec -u www-data -it nextcloud-app php occ upgrade || true
 docker exec -u www-data -it nextcloud-app php occ maintenance:mode --off
 echo "Update abgeschlossen"
 EOF
+
 chmod +x update-nextcloud.sh
 
+echo
 echo "Fertig → http://$(hostname -I | awk '{print $1}'):8080"
-echo "Update: cd /opt/nextcloud-docker && ./update-nextcloud.sh"
-[ -t 0 ] || echo "Passwörter: Root-DB: $MYSQL_ROOT_PASS | User: $MYSQL_USER | Pass: $MYSQL_USER_PASS"
+echo "Update:   cd /opt/nextcloud-docker && ./update-nextcloud.sh"
+
+if ! [ -t 0 ]; then
+  echo
+  echo "Passwörter (bitte notieren oder ändern!):"
+  echo "  Root-DB: $MYSQL_ROOT_PASS"
+  echo "  User:    $MYSQL_USER"
+  echo "  Pass:    $MYSQL_USER_PASS"
+fi
