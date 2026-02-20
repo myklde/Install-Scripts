@@ -8,27 +8,47 @@ apt update
 apt install -y curl sudo ca-certificates gnupg lsb-release openssl
 
 # ---------------------------------------------
-# Einmalige Passwortabfrage (ohne Wiederholung)
+# Einmalige Passwortabfrage mit Wiederholung bei leerer Eingabe
 # ---------------------------------------------
 echo
 echo "Bitte geben Sie die benötigten Passwörter ein."
 echo "Bei der Eingabe wird nichts angezeigt (Sicherheit)."
 
+# Funktion: Wiederhole Eingabe bis sie nicht leer ist
+read_nonempty() {
+    local prompt="$1"
+    local input
+    while true; do
+        read -r -s -p "$prompt" input
+        echo
+        if [ -n "$input" ]; then
+            echo "$input"
+            return
+        else
+            echo "Eingabe darf nicht leer sein. Bitte erneut versuchen."
+        fi
+    done
+}
+
+read_nonempty_prompt() {
+    local prompt="$1"
+    local input
+    while true; do
+        read -r -p "$prompt" input
+        if [ -n "$input" ]; then
+            echo "$input"
+            return
+        else
+            echo "Eingabe darf nicht leer sein. Bitte erneut versuchen."
+        fi
+    done
+}
+
 # MariaDB root Passwort
-read -r -s -p "MariaDB root Passwort: " MYSQL_ROOT_PASS
-echo   # Zeilenumbruch nach der stummen Eingabe
-if [ -z "$MYSQL_ROOT_PASS" ]; then
-    echo "Fehler: Das MariaDB root Passwort darf nicht leer sein."
-    exit 1
-fi
+MYSQL_ROOT_PASS=$(read_nonempty "MariaDB root Passwort: ")
 
 # Nextcloud DB Passwort
-read -r -s -p "Nextcloud DB Passwort: " MYSQL_USER_PASS
-echo
-if [ -z "$MYSQL_USER_PASS" ]; then
-    echo "Fehler: Das Nextcloud DB Passwort darf nicht leer sein."
-    exit 1
-fi
+MYSQL_USER_PASS=$(read_nonempty "Nextcloud DB Passwort: ")
 
 # DB Benutzername (optional mit Default)
 read -r -p "Nextcloud DB Benutzername [nextcloud]: " MYSQL_USER
@@ -38,17 +58,8 @@ MYSQL_USER="${MYSQL_USER:-nextcloud}"
 echo
 read -r -p "Soll ein Nextcloud Admin gleich angelegt werden? (j/N): " CREATE_ADMIN
 if [[ "$CREATE_ADMIN" =~ ^[jJyY] ]]; then
-    read -r -p "Nextcloud Admin Benutzername: " NEXTCLOUD_ADMIN_USER
-    if [ -z "$NEXTCLOUD_ADMIN_USER" ]; then
-        echo "Fehler: Der Admin-Benutzername darf nicht leer sein."
-        exit 1
-    fi
-    read -r -s -p "Nextcloud Admin Passwort: " NEXTCLOUD_ADMIN_PASSWORD
-    echo
-    if [ -z "$NEXTCLOUD_ADMIN_PASSWORD" ]; then
-        echo "Fehler: Das Admin-Passwort darf nicht leer sein."
-        exit 1
-    fi
+    NEXTCLOUD_ADMIN_USER=$(read_nonempty_prompt "Nextcloud Admin Benutzername: ")
+    NEXTCLOUD_ADMIN_PASSWORD=$(read_nonempty "Nextcloud Admin Passwort: ")
 fi
 
 echo
