@@ -1,0 +1,198 @@
+Install Ubuntu Server with Docker and a Nextcloud Container
+
+1. Prepare a USB Stick
+
+	Download Ventoy → https://www.ventoy.net/en/download.html → ventoy-"Version"-windows.zip
+
+	Extract the file ventoy-"Version"-windows.zip
+
+	Run → Ventoy2Disk.exe
+
+	Important: Select your USB stick (⚠ make sure it’s the right one).
+
+	Install Ventoy on the stick.
+
+2. Download Ubuntu Server ISO
+
+	Get Ubuntu Server 24.04.3 Minimal ISO → https://ubuntu.com/download/server/thank-you?version=24.04.3&architecture=amd64&lts=true
+
+	Copy the ISO file directly onto the Ventoy USB stick
+
+	Safely eject the stick and plug it into your target machine.
+
+	Enter BIOS → set boot order to USB first.
+
+3. Install Ubuntu Server
+
+	Boot from USB stick.
+
+	Select Ubuntu Server (minimal).
+
+	During installation → enable Docker (press spacebar).
+
+	Do not enable Nextcloud during installation (easier to manage via Docker later).
+
+	(Optional) enable OpenSSH Server.
+
+	Finish installation.
+
+	⚠ Sometimes the installer freezes at the end. If stuck:
+
+	Try SSH login. If it works, run sudo reboot.
+
+	Or press the PC power button once (don’t hold), then restart.
+
+4. Login as root
+
+	Run:    apt install sudo -y
+            sudo apt install curl -y
+            sudo apt install nano curl -y
+
+5. Create Script Part 1
+
+	Create file:   nano nextcloud-install-part-ONE.sh
+
+
+	Paste this code in it:
+
+
+
+
+
+#!/bin/bash
+# 1. Update system
+apt install sudo -y
+sudo apt install curl
+sudo apt update && sudo apt upgrade -y
+
+# 2. Install Docker (if not already installed)
+sudo apt install docker.io -y
+
+# 3. Enable Docker
+sudo systemctl enable docker --now
+
+# 4. Add user to Docker group
+sudo usermod -aG docker $USER
+
+# 5. Create project folder
+mkdir -p ~/nextcloud-docker
+
+# 6. Finish
+echo "-------------------------------------------------"
+echo "Script 1 finished."
+echo "Restart your system now. After reboot run Script 2."
+echo "-------------------------------------------------"
+sudo reboot
+
+
+
+
+
+
+	Save → CTRL+O, confirm, then exit → CTRL+X.
+
+6. Create Script Part 2
+
+	Create file:    nano nextcloud-install-part-TWO.sh
+
+
+	Paste this code (edit the variables at the top!):
+
+
+
+
+
+#!/bin/bash
+
+# Variables (edit!)
+MYSQL_ROOT_PASS="your_root_password"
+MYSQL_USER="your_username"
+MYSQL_USER_PASS="your_user_password"
+
+# 1. Enter project folder
+cd ~/nextcloud-docker || exit
+
+# 2. Install Docker Compose plugin
+mkdir -p ~/.docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.39.2/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+chmod +x ~/.docker/cli-plugins/docker-compose
+docker compose version
+
+# 3. Create docker-compose.yml
+cat <<EOF > docker-compose.yml
+version: '3'
+
+services:
+  db:
+    image: mariadb:11
+    container_name: nextcloud-db
+    restart: always
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    environment:
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASS
+      - MYSQL_PASSWORD=$MYSQL_USER_PASS
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=$MYSQL_USER
+    volumes:
+      - db:/var/lib/mysql
+
+  app:
+    image: nextcloud:29
+    container_name: nextcloud-app
+    restart: always
+    ports:
+      - 8080:80
+    depends_on:
+      - db
+    volumes:
+      - nextcloud:/var/www/html
+    environment:
+      - MYSQL_PASSWORD=$MYSQL_USER_PASS
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=$MYSQL_USER
+      - MYSQL_HOST=db
+
+volumes:
+  db:
+  nextcloud:
+EOF
+
+# 4. Start containers
+docker compose up -d
+
+# 5. Check status
+docker ps
+
+echo "-------------------------------------------------"
+echo "Nextcloud is running! Access it at: http://YOUR_SERVER_IP:8080"
+echo "-------------------------------------------------"
+
+
+
+
+
+
+	Save → CTRL+O, confirm, then exit → CTRL+X.
+
+7. Make Both Scripts Executable:       chmod +x nextcloud-install-part-ONE.sh && chmod +x nextcloud-install-part-TWO.sh
+
+8. Run Installation
+
+	Start Script 1:     ./nextcloud-install-part-ONE.sh
+
+
+	→ This will reboot the system.
+
+	After reboot, log in again.
+
+	Run Script 2:      ./nextcloud-install-part-TWO.sh
+
+9. Test Nextcloud
+
+	From another device in the same network, open a browser:
+
+	http://YOUR_SERVER_IP:8080
+
+
+	Log in with the credentials you set in Script 2 variables.
+
