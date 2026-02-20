@@ -12,54 +12,14 @@ apt update
 apt install -y curl sudo ca-certificates gnupg lsb-release openssl
 
 # ---------------------------------------------
-# One-time password query with repetition when input is empty
+# Generiere sichere Zufallspasswörter für die Datenbank
 # ---------------------------------------------
-echo
-echo "Bitte geben Sie die benötigten Passwörter ein."
-echo "Bei der Eingabe wird nichts angezeigt (Sicherheit)."
+MYSQL_ROOT_PASS=$(openssl rand -base64 24)   # 32 Zeichen, sicher
+MYSQL_USER_PASS=$(openssl rand -base64 24)
+MYSQL_USER="nextcloud"                         # Fester, sinnvoller Benutzername
+MYSQL_DATABASE="nextcloud"
 
-# Function: Repeat input until it is not empty (for passwords)
-read_nonempty() {
-    local prompt="$1"
-    local input
-    while true; do
-        read -r -s -p "$prompt" input
-        echo
-        if [ -n "$input" ]; then
-            echo "$input"
-            return
-        else
-            echo "Eingabe darf nicht leer sein. Bitte erneut versuchen."
-        fi
-    done
-}
-
-# Function for visible input (e.g. username)
-read_nonempty_prompt() {
-    local prompt="$1"
-    local input
-    while true; do
-        read -r -p "$prompt" input
-        if [ -n "$input" ]; then
-            echo "$input"
-            return
-        else
-            echo "Eingabe darf nicht leer sein. Bitte erneut versuchen."
-        fi
-    done
-}
-
-# MariaDB root Password
-MYSQL_ROOT_PASS=$(read_nonempty "MariaDB root Password: ")
-
-# Nextcloud DB Password
-MYSQL_USER_PASS=$(read_nonempty "Nextcloud DB Password: ")
-
-# DB Username (optional with default)
-read -r -p "Nextcloud DB Username [nextcloud]: " MYSQL_USER
-MYSQL_USER="${MYSQL_USER:-nextcloud}"
-
-echo "Alle Angaben wurden erfasst. Die Installation beginnt..."
+echo "Zugangsdaten für die Datenbank wurden generiert."
 
 # ---------------------------------------------
 # Set up Docker repository
@@ -85,12 +45,12 @@ systemctl enable --now docker
 mkdir -p /opt/nextcloud-docker
 cd /opt/nextcloud-docker
 
-# .env file for passwords - OHNE Admin Variablen
+# .env file mit den generierten Passwörtern (ohne Admin-Variablen)
 cat <<EOF > .env
 MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASS
 MYSQL_PASSWORD=$MYSQL_USER_PASS
 MYSQL_USER=$MYSQL_USER
-MYSQL_DATABASE=nextcloud
+MYSQL_DATABASE=$MYSQL_DATABASE
 EOF
 
 cat <<EOF > docker-compose.yml
@@ -123,7 +83,7 @@ services:
       MYSQL_DATABASE: \${MYSQL_DATABASE}
       MYSQL_USER: \${MYSQL_USER}
       MYSQL_HOST: db
-      # Admin Variablen wurden entfernt - Erstanmeldung erfolgt über die Web-Oberfläche
+      # Admin-Account wird später über die Weboberfläche angelegt
 
 volumes:
   db:
@@ -148,9 +108,76 @@ echo "Update abgeschlossen"
 EOF
 chmod +x update-nextcloud.sh
 
+# ---------------------------------------------
+# Credentials-Datei für den Benutzer erstellen
+# ---------------------------------------------
+# Ermittle das Home-Verzeichnis des aufrufenden Benutzers (auch bei sudo)
+if [ -n "${SUDO_USER:-}" ]; then
+    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+else
+    USER_HOME="$HOME"
+fi
+
+CRED_FILE="$USER_HOME/nextcloud-credentials.txt"
+cat > "$CRED_FILE" <<EOF
+=====================================================
+Nextcloud Installation – Zugangsdaten
+=====================================================
+
+Die Nextcloud-Instanz ist unter folgender Adresse erreichbar:
+  URL: http://$(hostname -I | awk '{print $1}'):8080
+
+Für die Ersteinrichtung im Browser benötigen Sie folgende
+Datenbank-Zugangsdaten (bitte genau so eingeben):
+
+  Datenbank-Host:     db
+  Datenbank-Name:     $MYSQL_DATABASE
+  Datenbank-Benutzer: $MYSQL_USER
+  Datenbank-Passwort: $MYSQL_USER_PASS
+
+Das MariaDB-Root-Passwort (nur für Notfälle):
+  Root-Passwort:      $MYSQL_ROOT_PASS
+
+Die Datenbank-Zugangsdaten sind auch in der Datei
+/opt/nextcloud-docker/.env gespeichert.
+
+Wichtiger Hinweis:
+- Beim ersten Aufruf im Browser müssen Sie einen Administrator-Account
+  für Nextcloud anlegen (frei wählbare Zugangsdaten).
+- Danach werden Sie nach den oben genannten Datenbank-Zugangsdaten gefragt.
+- Bewahren Sie diese Zugangsdaten sicher auf – sie werden nicht noch einmal
+  angezeigt.
+
+Update-Skript: cd /opt/nextcloud-docker && ./update-nextcloud.sh
+=====================================================
+EOF
+
+chmod 600 "$CRED_FILE"
+
+# ---------------------------------------------
+# Ausgabe auf der Konsole
+# ---------------------------------------------
 echo
-echo "Fertig → http://$(hostname -I | awk '{print $1}'):8080"
-echo "Update: cd /opt/nextcloud-docker && ./update-nextcloud.sh"
+echo "====================================================="
+echo "Nextcloud wurde erfolgreich installiert!"
+echo "====================================================="
 echo
-echo "WICHTIG: Beim ersten Aufruf der Nextcloud-Instanz werden Sie aufgefordert,"
-echo "         einen Admin-Benutzer und ein Passwort über die Weboberfläche anzulegen."
+echo "Zugang zur Nextcloud-Instanz:"
+echo "  URL: http://$(hostname -I | awk '{print $1}'):8080"
+echo
+echo "Datenbank-Zugangsdaten (bitte für den ersten Aufruf notieren):"
+echo "  Host: db"
+echo "  Datenbank: $MYSQL_DATABASE"
+echo "  Benutzer: $MYSQL_USER"
+echo "  Passwort: $MYSQL_USER_PASS"
+echo "  MariaDB root Passwort: $MYSQL_ROOT_PASS (nur für Notfälle)"
+echo
+echo "Die Zugangsdaten wurden zusätzlich gespeichert in:"
+echo "  $CRED_FILE"
+echo
+echo "WICHTIG: Beim ersten Aufruf im Browser müssen Sie"
+echo "  - einen Administrator-Account für Nextcloud anlegen"
+echo "  - die oben genannten Datenbank-Zugangsdaten eingeben"
+echo
+echo "Update-Skript: cd /opt/nextcloud-docker && ./update-nextcloud.sh"
+echo "====================================================="
