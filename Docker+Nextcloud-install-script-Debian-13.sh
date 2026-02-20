@@ -3,23 +3,26 @@ set -euo pipefail
 
 echo "Nextcloud Install (Debian 13 + stable)"
 
-# Interaktiv nur wenn Terminal vorhanden
-if [ -t 0 ]; then
-  read -r -p "MariaDB root Passwort: " MYSQL_ROOT_PASS
-  read -r -p "Nextcloud DB User: "     MYSQL_USER
-  read -r -s -p "Nextcloud DB Passwort: " MYSQL_USER_PASS
-  echo
-else
-  MYSQL_ROOT_PASS="${MYSQL_ROOT_PASS:-$(openssl rand -base64 18)}"
-  MYSQL_USER="${MYSQL_USER:-nextcloud}"
-  MYSQL_USER_PASS="${MYSQL_USER_PASS:-$(openssl rand -base64 15)}"
-  echo "Kein TTY → Defaults / Zufallspasswörter werden verwendet"
-  echo "DB User: $MYSQL_USER"
-  echo "DB Pass: $MYSQL_USER_PASS  (ändern Sie es danach!)"
-fi
+# Immer interaktiv fragen (auch bei curl | bash, solange Terminal offen)
+echo "Passwörter eingeben (leer = Zufallswert wird generiert)"
+read -r -p "MariaDB root Passwort: " MYSQL_ROOT_PASS
+read -r -p "Nextcloud DB User [nextcloud]: " MYSQL_USER
+read -r -s -p "Nextcloud DB Passwort: " MYSQL_USER_PASS
+echo
 
-[ -z "$MYSQL_ROOT_PASS" ] && { echo "Root-Passwort fehlt"; exit 1; }
-[ -z "$MYSQL_USER_PASS" ] && { echo "User-Passwort fehlt"; exit 1; }
+# Defaults falls leer
+MYSQL_USER="${MYSQL_USER:-nextcloud}"
+[ -z "$MYSQL_ROOT_PASS" ] && MYSQL_ROOT_PASS="$(openssl rand -base64 18)"
+[ -z "$MYSQL_USER_PASS" ] && MYSQL_USER_PASS="$(openssl rand -base64 15)"
+
+echo "Verwendete Werte:"
+echo "  Root-Pass:   $MYSQL_ROOT_PASS"
+echo "  DB-User:     $MYSQL_USER"
+echo "  DB-Pass:     $MYSQL_USER_PASS"
+echo "  (Speichern Sie diese jetzt!)"
+echo
+
+[ -z "$MYSQL_ROOT_PASS" ] || [ -z "$MYSQL_USER_PASS" ] && { echo "Passwort fehlt"; exit 1; }
 
 apt update && apt upgrade -y
 apt install -y curl nano ca-certificates gnupg lsb-release
