@@ -72,15 +72,6 @@ MYSQL_USER_PASS=$(read_nonempty "Nextcloud DB Password: ")
 read -r -p "Nextcloud DB Username [nextcloud]: " MYSQL_USER
 MYSQL_USER="${MYSQL_USER:-nextcloud}"
 
-# Optional: Create Nextcloud Admin
-echo
-read -r -p "Soll ein Nextcloud Admin gleich angelegt werden? (j/N): " CREATE_ADMIN
-if [[ "$CREATE_ADMIN" =~ ^[jJyY] ]]; then
-    NEXTCLOUD_ADMIN_USER=$(read_nonempty_prompt "Nextcloud Admin Benutzername: ")
-    NEXTCLOUD_ADMIN_PASSWORD=$(read_nonempty "Nextcloud Admin Passwort: ")
-fi
-
-echo
 echo "Alle Angaben wurden erfasst. Die Installation beginnt..."
 
 # ---------------------------------------------
