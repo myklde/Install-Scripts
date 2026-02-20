@@ -3,32 +3,60 @@ set -euo pipefail
 
 echo "Nextcloud Install (Debian 13 + stable)"
 
-# Basics installieren (falls minimales System)
+# Basis-Pakete
 apt update
 apt install -y curl sudo ca-certificates gnupg lsb-release openssl
 
-# Immer interaktiv fragen – Abbruch wenn leer
+# ---------------------------------------------
+# Einmalige Passwortabfrage (ohne Wiederholung)
+# ---------------------------------------------
 echo
-echo "Passwörter eingeben – leer lassen = Abbruch!"
-read -r -p "MariaDB root Passwort: " MYSQL_ROOT_PASS
-read -r -p "Nextcloud DB User [nextcloud]: " MYSQL_USER
+echo "Bitte geben Sie die benötigten Passwörter ein."
+echo "Bei der Eingabe wird nichts angezeigt (Sicherheit)."
+
+# MariaDB root Passwort
+read -r -s -p "MariaDB root Passwort: " MYSQL_ROOT_PASS
+echo   # Zeilenumbruch nach der stummen Eingabe
+if [ -z "$MYSQL_ROOT_PASS" ]; then
+    echo "Fehler: Das MariaDB root Passwort darf nicht leer sein."
+    exit 1
+fi
+
+# Nextcloud DB Passwort
 read -r -s -p "Nextcloud DB Passwort: " MYSQL_USER_PASS
 echo
+if [ -z "$MYSQL_USER_PASS" ]; then
+    echo "Fehler: Das Nextcloud DB Passwort darf nicht leer sein."
+    exit 1
+fi
 
-[ -z "$MYSQL_ROOT_PASS" ] && { echo "Root-Passwort erforderlich!"; exit 1; }
-[ -z "$MYSQL_USER_PASS" ] && { echo "DB-Passwort erforderlich!"; exit 1; }
-
+# DB Benutzername (optional mit Default)
+read -r -p "Nextcloud DB Benutzername [nextcloud]: " MYSQL_USER
 MYSQL_USER="${MYSQL_USER:-nextcloud}"
 
+# Optional: Nextcloud Admin anlegen
 echo
-echo "Verwendete Werte:"
-echo "  Root-Pass:   $MYSQL_ROOT_PASS"
-echo "  DB-User:     $MYSQL_USER"
-echo "  DB-Pass:     $MYSQL_USER_PASS"
-echo "  → Diese jetzt notieren!"
-echo
+read -r -p "Soll ein Nextcloud Admin gleich angelegt werden? (j/N): " CREATE_ADMIN
+if [[ "$CREATE_ADMIN" =~ ^[jJyY] ]]; then
+    read -r -p "Nextcloud Admin Benutzername: " NEXTCLOUD_ADMIN_USER
+    if [ -z "$NEXTCLOUD_ADMIN_USER" ]; then
+        echo "Fehler: Der Admin-Benutzername darf nicht leer sein."
+        exit 1
+    fi
+    read -r -s -p "Nextcloud Admin Passwort: " NEXTCLOUD_ADMIN_PASSWORD
+    echo
+    if [ -z "$NEXTCLOUD_ADMIN_PASSWORD" ]; then
+        echo "Fehler: Das Admin-Passwort darf nicht leer sein."
+        exit 1
+    fi
+fi
 
-# Docker Repository
+echo
+echo "Alle Angaben wurden erfasst. Die Installation beginnt..."
+
+# ---------------------------------------------
+# Docker-Repository einrichten
+# ---------------------------------------------
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
 chmod a+r /etc/apt/keyrings/docker.asc
@@ -44,8 +72,21 @@ systemctl enable --now docker
 
 [ -n "${SUDO_USER:-}" ] && usermod -aG docker "$SUDO_USER"
 
+# ---------------------------------------------
+# Nextcloud mit docker-compose aufsetzen
+# ---------------------------------------------
 mkdir -p /opt/nextcloud-docker
 cd /opt/nextcloud-docker
+
+# .env-Datei für Passwörter
+cat <<EOF > .env
+MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASS
+MYSQL_PASSWORD=$MYSQL_USER_PASS
+MYSQL_USER=$MYSQL_USER
+MYSQL_DATABASE=nextcloud
+NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER:-}
+NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD:-}
+EOF
 
 cat <<EOF > docker-compose.yml
 services:
@@ -55,10 +96,10 @@ services:
     restart: always
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     environment:
-      MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASS
-      MYSQL_PASSWORD: $MYSQL_USER_PASS
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: $MYSQL_USER
+      MYSQL_ROOT_PASSWORD: \${MYSQL_ROOT_PASSWORD}
+      MYSQL_PASSWORD: \${MYSQL_PASSWORD}
+      MYSQL_DATABASE: \${MYSQL_DATABASE}
+      MYSQL_USER: \${MYSQL_USER}
     volumes:
       - db:/var/lib/mysql
 
@@ -73,10 +114,12 @@ services:
     volumes:
       - nextcloud:/var/www/html
     environment:
-      MYSQL_PASSWORD: $MYSQL_USER_PASS
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: $MYSQL_USER
+      MYSQL_PASSWORD: \${MYSQL_PASSWORD}
+      MYSQL_DATABASE: \${MYSQL_DATABASE}
+      MYSQL_USER: \${MYSQL_USER}
       MYSQL_HOST: db
+      NEXTCLOUD_ADMIN_USER: \${NEXTCLOUD_ADMIN_USER}
+      NEXTCLOUD_ADMIN_PASSWORD: \${NEXTCLOUD_ADMIN_PASSWORD}
 
 volumes:
   db:
@@ -85,6 +128,9 @@ EOF
 
 docker compose up -d
 
+# ---------------------------------------------
+# Update-Skript erstellen
+# ---------------------------------------------
 cat <<'EOF' > update-nextcloud.sh
 #!/usr/bin/env bash
 set -euo pipefail
