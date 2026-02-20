@@ -3,29 +3,24 @@ set -euo pipefail
 
 echo "Nextcloud Install (Debian 13 + stable)"
 
-# Immer interaktiv fragen (auch bei curl | bash, solange Terminal offen)
-echo "Passwörter eingeben (leer = Zufallswert wird generiert)"
+apt update
+apt install -y curl sudo ca-certificates gnupg lsb-release openssl
+
+echo "Passwörter eingeben (leer = Zufall)"
 read -r -p "MariaDB root Passwort: " MYSQL_ROOT_PASS
 read -r -p "Nextcloud DB User [nextcloud]: " MYSQL_USER
 read -r -s -p "Nextcloud DB Passwort: " MYSQL_USER_PASS
 echo
 
-# Defaults falls leer
 MYSQL_USER="${MYSQL_USER:-nextcloud}"
 [ -z "$MYSQL_ROOT_PASS" ] && MYSQL_ROOT_PASS="$(openssl rand -base64 18)"
 [ -z "$MYSQL_USER_PASS" ] && MYSQL_USER_PASS="$(openssl rand -base64 15)"
 
-echo "Verwendete Werte:"
-echo "  Root-Pass:   $MYSQL_ROOT_PASS"
-echo "  DB-User:     $MYSQL_USER"
-echo "  DB-Pass:     $MYSQL_USER_PASS"
-echo "  (Speichern Sie diese jetzt!)"
+echo "Werte:"
+echo "  Root: $MYSQL_ROOT_PASS"
+echo "  User: $MYSQL_USER"
+echo "  Pass: $MYSQL_USER_PASS"
 echo
-
-[ -z "$MYSQL_ROOT_PASS" ] || [ -z "$MYSQL_USER_PASS" ] && { echo "Passwort fehlt"; exit 1; }
-
-apt update && apt upgrade -y
-apt install -y curl nano ca-certificates gnupg lsb-release
 
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
@@ -38,14 +33,12 @@ apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker
 
 systemctl enable --now docker
 
-if [ -n "${SUDO_USER:-}" ]; then
-  usermod -aG docker "$SUDO_USER"
-fi
+[ -n "${SUDO_USER:-}" ] && usermod -aG docker "$SUDO_USER"
 
 mkdir -p /opt/nextcloud-docker
 cd /opt/nextcloud-docker
 
-cat <<EOF > docker-compose.yml
+cat <<'EOF' > docker-compose.yml
 services:
   db:
     image: mariadb:11
@@ -92,10 +85,9 @@ docker compose up -d
 docker exec -u www-data -it nextcloud-app php occ maintenance:mode --on || true
 docker exec -u www-data -it nextcloud-app php occ upgrade || true
 docker exec -u www-data -it nextcloud-app php occ maintenance:mode --off
-echo "Update abgeschlossen"
+echo "Update fertig"
 EOF
 chmod +x update-nextcloud.sh
 
 echo "Fertig → http://$(hostname -I | awk '{print $1}'):8080"
 echo "Update: cd /opt/nextcloud-docker && ./update-nextcloud.sh"
-[ -t 0 ] || echo "Passwörter oben notiert – Root-DB: $MYSQL_ROOT_PASS"
