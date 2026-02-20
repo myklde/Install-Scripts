@@ -1,12 +1,4 @@
 #!/usr/bin/env bash
-
-
-
-# install the script with this command->    apt update && apt install curl -y && curl -sSL -o install.sh https://raw.githubusercontent.com/myklde/Install-Scripts/main/Docker+Nextcloud-install-script-Debian-13.sh && chmod +x install.sh && sudo ./install.sh
-
-
-
-
 set -euo pipefail
 
 echo "Nextcloud Install (Debian 13 + stable)"
