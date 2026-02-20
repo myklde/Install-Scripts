@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 
+
+
+
+
+
 # INSTALL THE SCRIPT WITH THIS COMMAND: 
 # ->     apt update && apt install curl -y && curl -sSL -o install.sh https://raw.githubusercontent.com/myklde/Install-Scripts/main/Docker+Nextcloud-install-script-Debian-13.sh && chmod +x install.sh && ./install.sh
+
+
+
+
+
 
 set -euo pipefail
 
