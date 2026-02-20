@@ -25,13 +25,13 @@ apt update
 apt install -y curl sudo ca-certificates gnupg lsb-release openssl
 
 # ---------------------------------------------
-# Einmalige Passwortabfrage mit Wiederholung bei leerer Eingabe
+# One-time password query with repetition when input is empty
 # ---------------------------------------------
 echo
 echo "Bitte geben Sie die benötigten Passwörter ein."
 echo "Bei der Eingabe wird nichts angezeigt (Sicherheit)."
 
-# Funktion: Wiederhole Eingabe bis sie nicht leer ist (für Passwörter)
+# Function: Repeat input until it is not empty (for passwords)
 read_nonempty() {
     local prompt="$1"
     local input
@@ -47,7 +47,7 @@ read_nonempty() {
     done
 }
 
-# Funktion für sichtbare Eingaben (z.B. Benutzername)
+# Function for visible input (e.g. username)
 read_nonempty_prompt() {
     local prompt="$1"
     local input
@@ -62,17 +62,17 @@ read_nonempty_prompt() {
     done
 }
 
-# MariaDB root Passwort
-MYSQL_ROOT_PASS=$(read_nonempty "MariaDB root Passwort: ")
+# MariaDB root Password
+MYSQL_ROOT_PASS=$(read_nonempty "MariaDB root Password: ")
 
-# Nextcloud DB Passwort
-MYSQL_USER_PASS=$(read_nonempty "Nextcloud DB Passwort: ")
+# Nextcloud DB Password
+MYSQL_USER_PASS=$(read_nonempty "Nextcloud DB Password: ")
 
-# DB Benutzername (optional mit Default)
-read -r -p "Nextcloud DB Benutzername [nextcloud]: " MYSQL_USER
+# DB Username (optional with default)
+read -r -p "Nextcloud DB Username [nextcloud]: " MYSQL_USER
 MYSQL_USER="${MYSQL_USER:-nextcloud}"
 
-# Optional: Nextcloud Admin anlegen
+# Optional: Create Nextcloud Admin
 echo
 read -r -p "Soll ein Nextcloud Admin gleich angelegt werden? (j/N): " CREATE_ADMIN
 if [[ "$CREATE_ADMIN" =~ ^[jJyY] ]]; then
@@ -84,7 +84,7 @@ echo
 echo "Alle Angaben wurden erfasst. Die Installation beginnt..."
 
 # ---------------------------------------------
-# Docker-Repository einrichten
+# Set up Docker repository
 # ---------------------------------------------
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
@@ -102,12 +102,12 @@ systemctl enable --now docker
 [ -n "${SUDO_USER:-}" ] && usermod -aG docker "$SUDO_USER"
 
 # ---------------------------------------------
-# Nextcloud mit docker-compose aufsetzen
+# Set up Nextcloud with docker-compose
 # ---------------------------------------------
 mkdir -p /opt/nextcloud-docker
 cd /opt/nextcloud-docker
 
-# .env-Datei für Passwörter
+# .env file for passwords
 cat <<EOF > .env
 MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASS
 MYSQL_PASSWORD=$MYSQL_USER_PASS
@@ -158,7 +158,7 @@ EOF
 docker compose up -d
 
 # ---------------------------------------------
-# Update-Skript erstellen
+# Create update script
 # ---------------------------------------------
 cat <<'EOF' > update-nextcloud.sh
 #!/usr/bin/env bash
