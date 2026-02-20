@@ -3,32 +3,32 @@ set -euo pipefail
 
 echo "Nextcloud Install (Debian 13 + stable)"
 
+# Basics installieren (falls minimales System)
 apt update
 apt install -y curl sudo ca-certificates gnupg lsb-release openssl
 
+# Immer interaktiv fragen – Abbruch wenn leer
 echo
-echo "ALLE Passwörter MÜSSEN eingegeben werden!"
-echo
+echo "Passwörter eingeben – leer lassen = Abbruch!"
 read -r -p "MariaDB root Passwort: " MYSQL_ROOT_PASS
 read -r -p "Nextcloud DB User [nextcloud]: " MYSQL_USER
 read -r -s -p "Nextcloud DB Passwort: " MYSQL_USER_PASS
 echo
 
-MYSQL_USER="${MYSQL_USER:-nextcloud}"
+[ -z "$MYSQL_ROOT_PASS" ] && { echo "Root-Passwort erforderlich!"; exit 1; }
+[ -z "$MYSQL_USER_PASS" ] && { echo "DB-Passwort erforderlich!"; exit 1; }
 
-if [ -z "$MYSQL_ROOT_PASS" ] || [ -z "$MYSQL_USER_PASS" ]; then
-  echo "Fehler: Alle Passwörter müssen ausgefüllt werden!"
-  exit 1
-fi
+MYSQL_USER="${MYSQL_USER:-nextcloud}"
 
 echo
 echo "Verwendete Werte:"
-echo "  Root: $MYSQL_ROOT_PASS"
-echo "  User: $MYSQL_USER"
-echo "  Pass: $MYSQL_USER_PASS"
-echo "→ Diese jetzt notieren!"
+echo "  Root-Pass:   $MYSQL_ROOT_PASS"
+echo "  DB-User:     $MYSQL_USER"
+echo "  DB-Pass:     $MYSQL_USER_PASS"
+echo "  → Diese jetzt notieren!"
 echo
 
+# Docker Repository
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
 chmod a+r /etc/apt/keyrings/docker.asc
@@ -94,7 +94,7 @@ docker compose up -d
 docker exec -u www-data -it nextcloud-app php occ maintenance:mode --on || true
 docker exec -u www-data -it nextcloud-app php occ upgrade || true
 docker exec -u www-data -it nextcloud-app php occ maintenance:mode --off
-echo "Update fertig"
+echo "Update abgeschlossen"
 EOF
 chmod +x update-nextcloud.sh
 
