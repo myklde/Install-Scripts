@@ -14,7 +14,7 @@ echo
 echo "Bitte geben Sie die benötigten Passwörter ein."
 echo "Bei der Eingabe wird nichts angezeigt (Sicherheit)."
 
-# Funktion: Wiederhole Eingabe bis sie nicht leer ist
+# Funktion: Wiederhole Eingabe bis sie nicht leer ist (für Passwörter)
 read_nonempty() {
     local prompt="$1"
     local input
@@ -30,6 +30,7 @@ read_nonempty() {
     done
 }
 
+# Funktion für sichtbare Eingaben (z.B. Benutzername)
 read_nonempty_prompt() {
     local prompt="$1"
     local input
