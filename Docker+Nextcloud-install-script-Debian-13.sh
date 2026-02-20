@@ -1,20 +1,7 @@
 #!/usr/bin/env bash
 
-
-
-
-
-
 # INSTALL THE SCRIPT WITH THIS COMMAND: 
-
 # ->     apt update && apt install curl -y && curl -sSL -o install.sh https://raw.githubusercontent.com/myklde/Install-Scripts/main/Docker+Nextcloud-install-script-Debian-13.sh && chmod +x install.sh && ./install.sh
-
-
-
-
-
-
-
 
 set -euo pipefail
 
@@ -98,14 +85,12 @@ systemctl enable --now docker
 mkdir -p /opt/nextcloud-docker
 cd /opt/nextcloud-docker
 
-# .env file for passwords
+# .env file for passwords - OHNE Admin Variablen
 cat <<EOF > .env
 MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASS
 MYSQL_PASSWORD=$MYSQL_USER_PASS
 MYSQL_USER=$MYSQL_USER
 MYSQL_DATABASE=nextcloud
-NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER:-}
-NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD:-}
 EOF
 
 cat <<EOF > docker-compose.yml
@@ -138,8 +123,7 @@ services:
       MYSQL_DATABASE: \${MYSQL_DATABASE}
       MYSQL_USER: \${MYSQL_USER}
       MYSQL_HOST: db
-      NEXTCLOUD_ADMIN_USER: \${NEXTCLOUD_ADMIN_USER}
-      NEXTCLOUD_ADMIN_PASSWORD: \${NEXTCLOUD_ADMIN_PASSWORD}
+      # Admin Variablen wurden entfernt - Erstanmeldung erfolgt über die Web-Oberfläche
 
 volumes:
   db:
@@ -167,3 +151,6 @@ chmod +x update-nextcloud.sh
 echo
 echo "Fertig → http://$(hostname -I | awk '{print $1}'):8080"
 echo "Update: cd /opt/nextcloud-docker && ./update-nextcloud.sh"
+echo
+echo "WICHTIG: Beim ersten Aufruf der Nextcloud-Instanz werden Sie aufgefordert,"
+echo "         einen Admin-Benutzer und ein Passwort über die Weboberfläche anzulegen."
