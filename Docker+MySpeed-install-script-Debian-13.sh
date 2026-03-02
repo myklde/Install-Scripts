@@ -11,7 +11,6 @@
 
 
 
-#!/bin/bash
 set -e
 
 # ===== Colors =====
