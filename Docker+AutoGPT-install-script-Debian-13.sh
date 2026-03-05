@@ -1,27 +1,27 @@
 #!/bin/bash
-set -e  # Skript bei Fehlern abbrechen
+set -e  # Exit script on errors
 
 # =============================================================================
-# AutoGPT Installationsskript für einen minimalen Proxmox LXC Container
-# – vollständig überarbeitet, basierend auf der erfolgreichen Installation –
+# AutoGPT installation script for a minimal Proxmox LXC container
+# – fully revised, based on the successful installation –
 # =============================================================================
-# Dieses Skript installiert Docker, Docker Compose und die AutoGPT-Plattform
-# aus dem offiziellen GitHub-Repository. Es verwendet die richtige Kombination
-# der Compose-Dateien (docker-compose.yml + docker-compose.platform.yml)
-# und startet die Platform auf Port 3000.
+# This script installs Docker, Docker Compose, and the AutoGPT platform
+# from the official GitHub repository. It uses the correct combination
+# of Compose files (docker-compose.yml + docker-compose.platform.yml)
+# and starts the platform on port 3000.
 #
-# WICHTIG – Voraussetzungen auf Proxmox-Host:
-#   1. Der LXC-Container MUSS als privilegierter Container angelegt sein.
-#   2. In der Containerkonfiguration muss 'features: nesting=1' gesetzt sein.
-#      (Datei: /etc/pve/lxc/<CTID>.conf, Zeile einfügen: features: nesting=1)
-#   3. Der Container benötigt eine ausreichende Festplatten- und RAM-Größe
-#      (mind. 20 GB Platte, 4 GB RAM empfohlen).
+# IMPORTANT – Requirements on the Proxmox host:
+#   1. The LXC container MUST be created as a privileged container.
+#   2. In the container configuration 'features: nesting=1' must be set.
+#      (File: /etc/pve/lxc/<CTID>.conf, add line: features: nesting=1)
+#   3. The container requires sufficient disk and RAM resources
+#      (at least 20 GB disk, 4 GB RAM recommended).
 #
-# Das Skript MUSS als root im Container ausgeführt werden.
+# The script MUST be executed as root inside the container.
 # =============================================================================
 
 # ------------------------------
-# Prüfen, ob das Skript als root läuft
+# Check if the script is running as root
 # ------------------------------
 if [[ $EUID -ne 0 ]]; then
    echo "Dieses Skript muss als root ausgeführt werden. Verwende 'sudo' oder wechsle zu root." >&2
@@ -31,7 +31,7 @@ fi
 echo "=== AutoGPT-Installation gestartet: $(date) ==="
 
 # ------------------------------
-# System aktualisieren und Basispakete installieren
+# Update system and install base packages
 # ------------------------------
 echo "=== Aktualisiere Paketlisten und installiere Grundpakete (curl, git, sudo, etc.) ==="
 apt update
@@ -39,15 +39,15 @@ apt upgrade -y
 apt install -y curl git sudo gnupg lsb-release ca-certificates
 
 # ------------------------------
-# Docker und Docker Compose installieren (offizielle Methode)
+# Install Docker and Docker Compose (official method)
 # ------------------------------
 echo "=== Installiere Docker Engine und Docker Compose Plugin ==="
-# Docker's offizielles Repository hinzufügen
+# Add Docker's official repository
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 chmod a+r /etc/apt/keyrings/docker.gpg
 
-# Für Debian/Ubuntu: Quelle basierend auf Distribution
+# For Debian/Ubuntu: source based on distribution
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
   $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
@@ -55,12 +55,12 @@ echo \
 apt update
 apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# Docker-Dienst starten und Autostart aktivieren
+# Start Docker service and enable autostart
 systemctl enable docker
 systemctl start docker
 
 # ------------------------------
-# Prüfen, ob Docker funktioniert (hello-world)
+# Check if Docker works (hello-world)
 # ------------------------------
 echo "=== Prüfe Docker-Funktionalität mit 'hello-world' ==="
 if ! docker run --rm hello-world > /dev/null 2>&1; then
@@ -72,7 +72,7 @@ else
 fi
 
 # ------------------------------
-# Benutzer zur Docker-Gruppe hinzufügen (optional)
+# Add user to Docker group (optional)
 # ------------------------------
 if id -u ubuntu &>/dev/null; then
     usermod -aG docker ubuntu
@@ -83,7 +83,7 @@ elif id -u debian &>/dev/null; then
 fi
 
 # ------------------------------
-# AutoGPT Repository klonen
+# Clone AutoGPT repository
 # ------------------------------
 echo "=== Klone AutoGPT Repository ==="
 cd /opt
@@ -97,8 +97,8 @@ else
 fi
 
 # ------------------------------
-# Bestimmten Release-Tag auschecken (optional)
-# Hier: der neueste stabile Beta-Release v0.6.50
+# Checkout specific release tag (optional)
+# Here: the latest stable beta release v0.6.50
 # ------------------------------
 RELEASE_TAG="autogpt-platform-beta-v0.6.50"
 echo "=== Wechsle zu Release-Tag: $RELEASE_TAG ==="
@@ -106,12 +106,12 @@ git fetch --tags
 git checkout tags/$RELEASE_TAG -b $RELEASE_TAG 2>/dev/null || git checkout $RELEASE_TAG
 
 # ------------------------------
-# In das Plattform-Verzeichnis wechseln
+# Change into the platform directory
 # ------------------------------
 cd /opt/AutoGPT/autogpt_platform
 
 # ------------------------------
-# .env-Datei anlegen (falls gewünscht, aber nicht zwingend erforderlich)
+# Create .env file (optional, but not strictly required)
 # ------------------------------
 if [ ! -f .env ]; then
     echo "=== Erstelle leere .env-Datei (kann später mit API-Keys befüllt werden) ==="
@@ -119,24 +119,24 @@ if [ ! -f .env ]; then
 fi
 
 # ------------------------------
-# AutoGPT Platform mit Docker Compose starten (KOMBINATION DER DATEIEN!)
+# Start AutoGPT platform with Docker Compose (COMBINATION OF FILES!)
 # ------------------------------
 echo "=== Starte AutoGPT Platform mit 'docker-compose.yml' und 'docker-compose.platform.yml' im Hintergrund ==="
 docker compose -f docker-compose.yml -f docker-compose.platform.yml up -d
 
 # ------------------------------
-# Warten, bis die Dienste verfügbar sind
+# Wait until services are available
 # ------------------------------
 echo "=== Warte 60 Sekunden, bis alle Container gestartet sind... ==="
 sleep 60
 
 # ------------------------------
-# Zeige Status und Zugangsdaten
+# Show status and access information
 # ------------------------------
 echo "=== Docker-Container Status ==="
 docker compose -f docker-compose.yml -f docker-compose.platform.yml ps
 
-# IP-Adresse des Containers ermitteln
+# Determine container IP address
 CONTAINER_IP=$(hostname -I | awk '{print $1}')
 echo "========================================================="
 echo "AutoGPT-Plattform wurde erfolgreich gestartet!"
@@ -153,7 +153,7 @@ echo "     https://github.com/Significant-Gravitas/AutoGPT"
 echo "========================================================="
 
 # ------------------------------
-# Optional: Logs anzeigen, falls Fehler auftreten
+# Optional: Show logs if errors occur
 # ------------------------------
 if ! docker compose -f docker-compose.yml -f docker-compose.platform.yml ps | grep -q "Up"; then
     echo "WARNUNG: Nicht alle Container sind 'Up'. Hier die letzten Logs:"
