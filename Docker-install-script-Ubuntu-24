@@ -1,3 +1,7 @@
+apt update && apt upgrade -y
+apt install sudo
+apt install curl
+
 # Add Dockers offiziellen GPG-Schlüssel
 sudo apt-get update
 sudo apt-get install ca-certificates curl
