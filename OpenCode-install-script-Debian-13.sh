@@ -20,10 +20,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${YELLOW}=== OpenCode Installationsscript ===${NC}\n"
+echo -e "${YELLOW}=== OpenCode Installation Script ===${NC}\n"
 
 install_dependencies() {
-    echo -e "${YELLOW}[1/5] Installiere Abhängigkeiten...${NC}"
+    echo -e "${YELLOW}[1/5] Installing dependencies...${NC}"
     
     if command -v apt-get >/dev/null 2>&1; then
         apt-get update -qq
@@ -35,15 +35,15 @@ install_dependencies() {
     elif command -v apk >/dev/null 2>&1; then
         apk add --no-cache curl tar unzip git build-base
     else
-        echo -e "${RED}Keine unterstützte Paketverwaltung gefunden!${NC}"
+        echo -e "${RED}No supported package manager found!${NC}"
         exit 1
     fi
     
-    echo -e "${GREEN}Abhängigkeiten installiert${NC}\n"
+    echo -e "${GREEN}Dependencies installed${NC}\n"
 }
 
 check_requirements() {
-    echo -e "${YELLOW}[2/5] Prüfe Anforderungen...${NC}"
+    echo -e "${YELLOW}[2/5] Checking requirements...${NC}"
     
     local missing=()
     
@@ -54,33 +54,33 @@ check_requirements() {
     done
     
     if [ ${#missing[@]} -ne 0 ]; then
-        echo -e "${RED}Fehlende Befehle: ${missing[*]}${NC}"
+        echo -e "${RED}Missing commands: ${missing[*]}${NC}"
         exit 1
     fi
     
-    echo -e "${GREEN}Alle Anforderungen erfüllt${NC}\n"
+    echo -e "${GREEN}All requirements satisfied${NC}\n"
 }
 
 install_opencode() {
-    echo -e "${YELLOW}[3/5] Installiere OpenCode...${NC}"
+    echo -e "${YELLOW}[3/5] Installing OpenCode...${NC}"
     
     INSTALL_DIR="${OPENCODE_INSTALL_DIR:-$HOME/.opencode/bin}"
     mkdir -p "$INSTALL_DIR"
     
     if [ -n "${OPENCODE_BINARY:-}" ]; then
-        echo -e "${YELLOW}Installiere von lokaler Binary: $OPENCODE_BINARY${NC}"
+        echo -e "${YELLOW}Installing from local binary: $OPENCODE_BINARY${NC}"
         cp "$OPENCODE_BINARY" "$INSTALL_DIR/opencode"
     else
-        echo -e "${YELLOW}Lade OpenCode herunter...${NC}"
+        echo -e "${YELLOW}Downloading OpenCode...${NC}"
         curl -fsSL https://opencode.ai/install | bash
     fi
     
     chmod +x "$INSTALL_DIR/opencode"
-    echo -e "${GREEN}OpenCode installiert in $INSTALL_DIR${NC}\n"
+    echo -e "${GREEN}OpenCode installed in $INSTALL_DIR${NC}\n"
 }
 
 configure_path() {
-    echo -e "${YELLOW}[4/5] Konfiguriere PATH...${NC}"
+    echo -e "${YELLOW}[4/5] Configuring PATH...${NC}"
     
     INSTALL_DIR="${OPENCODE_INSTALL_DIR:-$HOME/.opencode/bin}"
     SHELL_NAME=$(basename "$SHELL")
@@ -107,40 +107,40 @@ configure_path() {
             echo "" >> "$PROFILE"
             echo "# OpenCode" >> "$PROFILE"
             echo "$PATH_LINE" >> "$PROFILE"
-            echo -e "${GREEN}PATH in $PROFILE konfiguriert${NC}"
+            echo -e "${GREEN}PATH configured in $PROFILE${NC}"
         else
-            echo -e "${GREEN}PATH bereits konfiguriert${NC}"
+            echo -e "${GREEN}PATH already configured${NC}"
         fi
     else
-        echo -e "${YELLOW}Keine Profil-Datei gefunden. Bitte manuell hinzufügen:${NC}"
+        echo -e "${YELLOW}No profile file found. Please add manually:${NC}"
         echo "  $PATH_LINE"
     fi
     
     export PATH="$INSTALL_DIR:$PATH"
-    echo -e "${GREEN}PATH für diese Sitzung gesetzt${NC}\n"
+    echo -e "${GREEN}PATH set for this session${NC}\n"
 }
 
 verify_installation() {
-    echo -e "${YELLOW}[5/5] Verifiziere Installation...${NC}"
+    echo -e "${YELLOW}[5/5] Verifying installation...${NC}"
     
     INSTALL_DIR="${OPENCODE_INSTALL_DIR:-$HOME/.opencode/bin}"
     
     if [ -x "$INSTALL_DIR/opencode" ]; then
-        echo -e "${GREEN}OpenCode Binary gefunden${NC}"
+        echo -e "${GREEN}OpenCode binary found${NC}"
         
         if "$INSTALL_DIR/opencode" --version >/dev/null 2>&1; then
             VERSION=$("$INSTALL_DIR/opencode" --version)
-            echo -e "${GREEN}OpenCode Version: $VERSION${NC}"
+            echo -e "${GREEN}OpenCode version: $VERSION${NC}"
         else
-            echo -e "${YELLOW}OpenCode kann nicht ausgeführt werden (fehlende Abhängigkeiten im System)${NC}"
+            echo -e "${YELLOW}OpenCode cannot be executed (missing system dependencies)${NC}"
         fi
     else
-        echo -e "${RED}OpenCode Binary nicht gefunden oder nicht ausführbar${NC}"
+        echo -e "${RED}OpenCode binary not found or not executable${NC}"
         exit 1
     fi
     
-    echo -e "\n${GREEN}=== Installation abgeschlossen! ===${NC}\n"
-    echo "Starte OpenCode mit: opencode"
+    echo -e "\n${GREEN}=== Installation completed! ===${NC}\n"
+    echo "Start OpenCode with: opencode"
 }
 
 main() {
