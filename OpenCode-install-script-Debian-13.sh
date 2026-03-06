@@ -140,7 +140,11 @@ verify_installation() {
     fi
     
     echo -e "\n${GREEN}=== Installation completed! ===${NC}\n"
-    echo "     REBOOT one time and Start OpenCode in the Terminal with:   opencode    "
+    echo "____________________________________________________________________________"
+    echo ""
+    echo "     reboot one time and Start OpenCode in the Terminal with:   opencode    "
+    echo ""
+    echo "____________________________________________________________________________"
 }
 
 main() {
