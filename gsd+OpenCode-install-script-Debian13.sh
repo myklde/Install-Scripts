@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+apt update && apt upgrade -y
+apt install sudo
+apt install curl
+
 set -euo pipefail
 
 RED='\033[0;31m'
