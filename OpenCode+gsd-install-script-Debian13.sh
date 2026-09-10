@@ -286,15 +286,76 @@ install_gsd() {
 
     info "[6/7] Installiere / aktualisiere GSD..."
 
+    GSD_CONFIG="$USER_HOME/.config/opencode"
+
     echo
     echo "Installiere aktuelle GSD-Version für OpenCode..."
+    echo "Installationsziel: $GSD_CONFIG"
+    echo "Debug-Ausgabe aktiviert."
+    echo
+
+    mkdir -p "$GSD_CONFIG"
+
+    chown -R "$INSTALL_USER:$INSTALL_USER" \
+        "$USER_HOME/.config" 2>/dev/null || true
 
     sudo -u "$INSTALL_USER" \
         HOME="$USER_HOME" \
         PATH="$USER_HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
         bash -c '
-            npx --yes get-shit-done-cc@latest --opencode --global
+            npx --verbose --yes get-shit-done-cc@latest --opencode --global
         '
+
+    echo
+
+    # GSD-Installation überprüfen.
+    #
+    # Der Installer installiert GSD global nach:
+    # ~/.config/opencode/
+    #
+    # Wir suchen nach typischen GSD-Dateien/Verzeichnissen,
+    # statt nur zu prüfen, ob das OpenCode-Verzeichnis existiert.
+
+    GSD_FOUND="false"
+
+    if [ -d "$GSD_CONFIG/get-shit-done" ]; then
+        GSD_FOUND="true"
+    fi
+
+    if [ -d "$GSD_CONFIG/command" ]; then
+        GSD_FOUND="true"
+    fi
+
+    if [ -d "$GSD_CONFIG/commands" ]; then
+        GSD_FOUND="true"
+    fi
+
+    if [ -f "$GSD_CONFIG/commands/gsd-help.md" ]; then
+        GSD_FOUND="true"
+    fi
+
+    if find "$GSD_CONFIG" \
+        -type f \
+        \( -name "gsd-help.md" -o -name "help.md" \) \
+        -print -quit 2>/dev/null | grep -q .; then
+        GSD_FOUND="true"
+    fi
+
+    if [ "$GSD_FOUND" != "true" ]; then
+        error "GSD wurde offenbar nicht installiert."
+        echo
+        echo "OpenCode-Konfiguration:"
+        echo "  $GSD_CONFIG"
+        echo
+        echo "Inhalt:"
+        find "$GSD_CONFIG" -maxdepth 3 -type f 2>/dev/null | head -100 || true
+        echo
+        error "GSD-Installation fehlgeschlagen."
+        exit 1
+    fi
+
+    chown -R "$INSTALL_USER:$INSTALL_USER" \
+        "$GSD_CONFIG"
 
     success "GSD installiert/aktualisiert."
 }
@@ -377,16 +438,42 @@ verify_installation() {
 
     GSD_CONFIG="$USER_HOME/.config/opencode"
 
-    if [ -d "$GSD_CONFIG" ]; then
-
-        success "OpenCode-Konfiguration gefunden:"
+    if [ ! -d "$GSD_CONFIG" ]; then
+        error "OpenCode-Konfigurationsverzeichnis nicht gefunden:"
         echo "$GSD_CONFIG"
+        exit 1
+    fi
 
+    GSD_FOUND="false"
+
+    if [ -d "$GSD_CONFIG/get-shit-done" ]; then
+        GSD_FOUND="true"
+    fi
+
+    if [ -d "$GSD_CONFIG/command" ]; then
+        GSD_FOUND="true"
+    fi
+
+    if [ -d "$GSD_CONFIG/commands" ]; then
+        GSD_FOUND="true"
+    fi
+
+    if find "$GSD_CONFIG" \
+        -type f \
+        \( -name "gsd-help.md" -o -name "help.md" \) \
+        -print -quit 2>/dev/null | grep -q .; then
+        GSD_FOUND="true"
+    fi
+
+    if [ "$GSD_FOUND" = "true" ]; then
+        success "GSD OK."
+        echo "GSD-Konfiguration:"
+        echo "  $GSD_CONFIG"
     else
-
-        warning "OpenCode-Konfigurationsverzeichnis nicht gefunden:"
-        echo "$GSD_CONFIG"
-
+        error "GSD konnte nicht verifiziert werden."
+        echo "Erwartet unter:"
+        echo "  $GSD_CONFIG"
+        exit 1
     fi
 
     echo
