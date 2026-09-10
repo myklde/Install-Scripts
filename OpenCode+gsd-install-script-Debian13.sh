@@ -5,7 +5,7 @@
 # Debian 13
 #
 # Erstinstallation:
-#   apt update && apt install -y curl && curl -fsSL https://raw.githubusercontent.com/myklde/Install-Scripts/main/OpenCode-install-script-Debian-13.sh | bash
+#   apt update && apt install -y curl && curl -fsSL https://raw.githubusercontent.com/myklde/Install-Scripts/main/OpenCode+gsd-install-script-Debian13.sh | bash
 #
 # Update:
 #   ./install.sh update
