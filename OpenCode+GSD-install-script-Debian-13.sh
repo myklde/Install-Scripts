@@ -143,7 +143,7 @@ verify_installation() {
     echo "_______________________________________________________________________________________________________________ "
     echo ""  
     echo "    U want the GSD-Plugin too? use     >>       npx @opengsd/gsd-core@latest --opencode --global        <<      " 
-    echo "    reboot one time after all and start OpenCode in the terminal with:     >>       opencode      <<   
+    echo "    reboot one time after all and start OpenCode in the terminal with:     >>       opencode      <<            "
     echo "_______________________________________________________________________________________________________________ "
 }
 
