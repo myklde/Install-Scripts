@@ -140,11 +140,11 @@ verify_installation() {
     fi
     
     echo -e "\n${GREEN}=== Installation completed! ===${NC}\n"
-    echo "_______________________________________________________________________________________________________________    "
+    echo "_______________________________________________________________________________________________________________ "
     echo ""  
-    echo "     reboot one time and start OpenCode in the terminal with:   opencode                                           "
-    echo "     U want the GSD-Plugin too? use       npx @opengsd/gsd-core@latest --opencode --global        after reboot     "
-    echo "_______________________________________________________________________________________________________________    "
+    echo "    U want the GSD-Plugin too? use     >>       npx @opengsd/gsd-core@latest --opencode --global        <<      " 
+    echo "    reboot one time after all and start OpenCode in the terminal with:     >>       opencode      <<   
+    echo "_______________________________________________________________________________________________________________ "
 }
 
 main() {
