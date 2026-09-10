@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-apt update && apt upgrade -y
-apt install sudo
-apt install curl
+#Install the script with ->        apt update && apt upgrade -y && apt install sudo && apt install curl && bash <(curl -fsSL https://raw.githubusercontent.com/myklde/Install-Scripts/main/gsd%2BOpenCode-install-script-Debian13.sh)
 
 set -euo pipefail
 
