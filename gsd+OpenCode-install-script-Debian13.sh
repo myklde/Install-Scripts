@@ -23,7 +23,7 @@ if [[ "$EUID" -eq 0 ]]; then
         echo -e "${YELLOW}Das Script läuft als root.${NC}"
         echo
         read -rp "Welcher Benutzer soll OpenCode + GSD bekommen? [mika]: " INSTALL_USER
-        INSTALL_USER="${INSTALL_USER:-mika}"
+        INSTALL_USER="${INSTALL_USER:-opencode-gsd}"
     fi
 
     TARGET_USER="$INSTALL_USER"
