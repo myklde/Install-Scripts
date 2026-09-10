@@ -5,10 +5,8 @@
 # Debian 13
 #
 # Erstinstallation:
-
-#  -------->                apt update && apt install -y curl && curl -fsSL https://raw.githubusercontent.com/myklde/Install-Scripts/main/OpenCode-install-script-Debian-13.sh | bash
+#   apt update && apt install -y curl && curl -fsSL https://raw.githubusercontent.com/myklde/Install-Scripts/main/OpenCode-install-script-Debian-13.sh | bash
 #
-
 # Update:
 #   ./install.sh update
 #
@@ -220,14 +218,19 @@ install_opencode() {
 
     echo "OpenCode wird für Benutzer '$INSTALL_USER' installiert."
     echo "Installationspfad: $USER_BIN"
+    echo "Starte OpenCode-Installer..."
+    echo "Debug-Ausgabe aktiviert (bash -x)."
+    echo
 
     sudo -u "$INSTALL_USER" \
         HOME="$USER_HOME" \
         XDG_BIN_DIR="$USER_BIN" \
         PATH="$USER_BIN:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
         bash -c '
-            curl -fsSL https://opencode.ai/install | bash
+            curl -fsSL https://opencode.ai/install | bash -x
         '
+
+    echo
 
     if [ ! -x "$USER_BIN/opencode" ]; then
         error "OpenCode wurde nicht gefunden:"
