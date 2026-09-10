@@ -142,7 +142,7 @@ verify_installation() {
     echo -e "\n${GREEN}=== Installation completed! ===${NC}\n"
     echo "______________________________________________________________________________________________________________________________________ "
     echo ""  
-    echo "    U want the GSD-Plugin too? use   >>     apt install -y nodejs npm && npx gsd-opencode@latest --opencode --global        <<    " 
+    echo "    U want the GSD-Plugin too? use   >>     apt install -y nodejs npm && npx gsd-opencode@latest --opencode --global -y          <<    " 
     echo "    reboot one time after all and start OpenCode in the terminal with:            >>       opencode      <<                            "
     echo "______________________________________________________________________________________________________________________________________ "
 }
