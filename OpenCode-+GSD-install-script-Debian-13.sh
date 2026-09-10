@@ -6,7 +6,7 @@
 
 
 # INSTALL THE SCRIPT WITH THIS COMMAND: 
-# ->     apt update && apt install curl -y && curl -sSL -o install.sh https://raw.githubusercontent.com/myklde/Install-Scripts/main/OpenCode-(+GSD)-install-script-Debian-13.sh && chmod +x install.sh && ./install.sh
+# ->     apt update && apt install curl -y && curl -sSL -o install.sh https://raw.githubusercontent.com/myklde/Install-Scripts/main/OpenCode+GSD-install-script-Debian-13.sh && chmod +x install.sh && ./install.sh
 
 
 
